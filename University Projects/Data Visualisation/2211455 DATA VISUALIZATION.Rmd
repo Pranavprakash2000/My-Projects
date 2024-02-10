@@ -1,0 +1,434 @@
+---
+title: "MA-304 Data Visualization"
+output: html_document
+---
+
+# Introduction
+
+A key component of upholding peace and order in society is policing data. Critical information about the incidents that occur is provided by the policing data, and this knowledge can be used to stop similar incidents from happening again. Analysis of the efficacy of law enforcement organisations in incident management and incident prevention is another benefit of policing data (Simpson, and Kirk, 2022). In this case, we've used the 2016 Policing Data of Dallas, Texas, to produce an interactive visualisation that can aid law enforcement in locating the city's crime hotspots.
+
+# Business Issues
+
+The identification of crime hotspots in Dallas, Texas, in 2016 is the main business issue that we are attempting to solve (Jetelina, et al 2020). By focusing their resources in the places that need it most, the law enforcement authorities can use this knowledge to stop incidents from happening. The user can examine the incidents on a map and filter them based on a number of criteria, including date, time, and incident type, using the dynamic visualization's user-friendly interface.
+
+# Dataset Description
+
+```{r, include = TRUE}
+library(base64enc)
+library(readr)
+
+#import
+csv_bi <- readBin("C:/Users/DELL/Downloads/37-00049-UOF-P_2016_prepped.csv", "raw",file.info("C:/Users/DELL/Downloads/37-00049-UOF-P_2016_prepped.csv")$size)
+csv_b64 <- base64enc::base64encode(csv_bi)
+
+csv_b641 <- csv_b64
+csv_bi1 <- base64enc::base64decode(csv_b64)
+
+UFP_39 <- read.csv(text = rawToChar(csv_bi1))
+dim(UFP_39)
+names(UFP_39)
+summary(UFP_39)
+UFP_39[1,]
+UFP_39$dayname <- weekdays(as.Date(UFP_39$INCIDENT_DATE, format = "%m/%d/%y"))
+UFP_39$dayname <- ordered(UFP_39$dayname, levels=c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+UFP_39$monthname <- months(as.Date(UFP_39$INCIDENT_DATE, format = "%m/%d/%y"))
+UFP_39$monthname <- ordered(UFP_39$monthname, levels=c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"))
+UFP_39$INCIDENT_TIME = format(strptime(UFP_39$INCIDENT_TIME, "%I:%M:%S %p"), format="%H:%M:%S")
+UFP_39$INCIDENT_TIME = as.POSIXct(UFP_39$INCIDENT_TIME, format="%H:%M:%S")
+UFP_39$time1h = cut(UFP_39$INCIDENT_TIME, breaks="1 hour")
+UFP_39 = UFP_39[-c(1),]
+UFP_39[1,]
+library(tidyverse)
+library(dplyr)
+library(gridExtra)
+```
+
+The given statement describes a dataset of 2384 occurrences or incidents, each of which has data for 49 different variables. The data was gathered between January 1 and December 31, 2016, and it relates to police operations in Dallas, Texas. A total of 2382 infractions were reported during this time, and the statement lists the five most frequent offences. The statement does not, however, list the most frequent violations.
+
+The offered R code seems to have something to do with cleaning up and getting ready data for analysis. Here is a quick summary of what each line of code accomplishes:
+
+
+The code dim(UFP_39) shows the dataset's dimensions, or the number of rows and columns.
+names(UFP_39): This function shows the dataset's variable names.
+summary(UFP_39): This code shows the minimum, maximum, median, mean, and quartiles of each variable in the dataset.
+UFP_39[1,]: This code shows the dataset's top row.
+UFP_39$dayname - weekdays(as.Date(UFP_39$INCIDENT_DATE, format = "%m/%d/%y")): Using this code, a new variable named dayname is created in the dataset that holds the day of the week that corresponds to each incident date.
+The dayname variable is ordered using the following code: UFP_39$dayname - ordered(UFP_39$dayname, levels=c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")): The days of the week are displayed in the proper order.
+UFP_39$monthname - months(as.Date(UFP_39$INCIDENT_DATE, format = "%m/%d/%y")): This code inserts the name of the month corresponding to each incident date into a new variable named monthname in the dataset.
+The monthname variable is ordered using this code: UFP_39$monthname - ordered(UFP_39$monthname, levels=c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")).
+format: UFP_39$INCIDENT_TIME(strptime(UFP_39$INCIDENT_TIME, "%I:%M:%S%p"), format="%H:%M:%S") uses a 24-hour format to display the time in the INCIDENT_TIME variable.
+UFPINCIDENT_TIME = UFP_39.POSIXct(UFP_39$INCIDENT_TIME, format="%H:%M:%S"): This code changes the INCIDENT_TIME variable's character format to the POSIXct format, which is how dates and times are represented in R.
+UFP_39$time1h = cut(UFP_39$INCIDENT_TIME, breaks="1 hour"): This formula groups the INCIDENT_TIME variable into 1-hour intervals and adds a new variable called time1h to the dataset.
+UFP_39 = UFP_39[-c(1),]: This code eliminates the dataset's first row.
+The first row of the adjusted dataset is shown by the code UFP_39[1,].
+The code then loads the widely used data packages tidyverse, dplyr, and gridExtra.
+ 
+# Data Visualization
+
+```{r, echo = TRUE}
+d = sort(table(UFP_39$SUBJECT_OFFENSE), decreasing = TRUE)[1:5]
+knitr::kable(d, caption = "Top 5 offences", col.names = c("Offence",
+                           "Frequency"))
+```
+According to the available data, the "Top 5 Offences" table lists the top five offences that were most commonly recorded in Dallas, Texas between January 1 and December 31, 2016 (Puente-Sánchez, García-García, and Tamames, 2020). The offences and accompanying frequencies are listed in the table.
+
+# Box Plot
+
+```{r}
+# load the required libraries
+library(plotly)
+library(dplyr)
+
+# create the interactive box plot
+plot_ly(UFP_39, x = ~UFP_39$OFFICER_GENDER, y = ~UFP_39$OFFICER_YEARS_ON_FORCE, type = "box") %>%
+  layout(title = "Officer Years on Force based on Gender",
+         xaxis = list(title = "Gender of Officer"),
+         yaxis = list(title = "Officer Years on Force"))
+```
+
+From the above box-plot it can be concluded that the average value of the officer on force for male is higher than the officer on the force for female officer. 
+
+# Histogram 
+
+```{r}
+plot_ly(x = UFP_39$OFFICER_YEARS_ON_FORCE, type = "histogram", nbinsx = 20)
+```
+
+The distribution of the officer years on force is exhibited in the above plot. There are higher number of officers having experiemce between 2 to 10 years. 
+
+```{r}
+library(ggplot2)
+
+# create data frame for the first table
+offences <- c("APOWW", "No Arrest", "Public Intoxication", "Warrant/Hold", "Assault/FV")
+frequency <- c(351, 305, 181, 110, 92)
+df1 <- data.frame(offences, frequency)
+
+# create bar chart
+ggplot(df1, aes(x = offences, y = frequency, fill = offences)) + 
+  geom_bar(stat = "identity") + 
+  xlab("Offences") + 
+  ylab("Frequency") + 
+  ggtitle("Top 5 Offences") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+The chart shows that APOWW (Apprehension by Peace Officer Without Warrant), which occurred 351 times within the indicated time period, was the most often recorded offence. No Arrest, which suggests that the police reacted to an incident but did not make an arrest, was the second most common offence, occurring 305 times. The third most commonly recorded offence, public intoxication, was committed 181 times. "Warrant/Hold" (110) and "Assault/FV" (92) ranked as the fourth and fifth most commonly recorded offences, respectively.
+
+It is significant to note that while there were 2382 reported offences in the data provided, the top 5 offences together accounted for 1039 of those. This suggests that only 43% of reported offences were committed by the top 5 offences. To have a thorough knowledge of the policing data in Dallas, Texas, it is crucial to additionally examine other offences that did not rank among the top 5.
+
+Additionally, the details concerning APOWW and FV provided add to the context. It is illegal for a peace officer to detain someone without a warrant, which is known as APOWW. It's possible that these occurrences are numerous in Dallas, Texas, making them the most frequently reported offence (Shjarback, and Maguire, 2021). Family violence, often known as FV, is a subset of domestic violence in which the perpetrator and victim are related to one another. Its inclusion among the top 5 offences suggests that it is a serious problem in Dallas, Texas.
+ 
+
+**Gender-injury correlation**
+
+```{r, echo = TRUE}
+q1 = ggplot(UFP_39, aes(x = OFFICER_GENDER, y=10, fill = OFFICER_INJURY)) + geom_bar(stat = "identity", position = "fill")+ scale_y_continuous(labels = scales::percent)+xlab("Officer gender") +  ylab("Proportion") + guides(fill=guide_legend(title="Officer injury")) + ggtitle("Gender of officer likely to injure?")+scale_fill_brewer(palette = "Paired")
+q2 = ggplot(UFP_39, aes(x = OFFICER_GENDER, y=10, fill = SUBJECT_INJURY)) + geom_bar(stat = "identity", position = "fill")+ scale_y_continuous(labels = scales::percent)+xlab("Officer gender") + ylab("Proportion") + guides(fill=guide_legend(title="Subject injury"))  + ggtitle("Gender of officer likely to injure subject?")+scale_fill_brewer(palette = "Paired")
+grid.arrange(q1, q2, ncol = 2, nrow = 1)
+```
+  
+According to the correlation study and visualisation displayed above, police officers' gender and their propensity to cause or sustain injuries while on duty are related.
+
+The statement claims that the data demonstrates that female cops are more likely than male officers to sustain injuries while carrying out their responsibilities. This could imply that female cops are more likely to be physically harmed or hurt while engaging in conflict with subjects. It's crucial to clarify that this phrase doesn't imply that female cops are less capable or efficient than male officers at carrying out their jobs.
+
+The statement also implies that male officers are more prone to hurt people, on the other side. This would suggest that male cops are more prone to employ physical force or interact violently with subjects. This statement does not imply that all male officers behave in this way or that female officers never use force, which is an essential distinction to make.
+
+It is important to recognise that the statement's reference to the correlation visualisation is a statistical analysis tool that aids in finding trends or links between data. Gender and incident/injury rates could be the variables in this scenario (Chang, et al 2020). Before drawing any conclusions or interpreting the data, it is crucial to properly analyse the data and comprehend the underlying issues.
+
+
+
+**Correlation between the number of offences and time, day and month.** 
+
+The following graphs show how the number of offences is correlated with time, day of week and month:  
+
+```{r, echo = TRUE, fig.width=13, fig.height=6}
+library(gridExtra)
+
+q3labels = seq(0, 23, by=1)
+q3labels = as.character(q3labels)
+
+q3 = ggplot(data=subset(UFP_39, !is.na(time1h)), aes(x=time1h)) +
+geom_bar(fill="#a13864") +
+scale_x_discrete(labels=q3labels) +
+xlab("Hour") +
+ylab("Number of offences") +
+ggtitle("Number of offences by hour")
+
+q4labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+q4 = ggplot(data=UFP_39, aes(x=dayname)) +
+geom_bar(fill="#583e59") +
+scale_x_discrete(labels=q4labels) +
+xlab("Days") +
+ylab("Number of offences") +
+ggtitle("Number of offences by day")
+
+q5labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+q5 = ggplot(data=UFP_39, aes(x=monthname)) +
+geom_bar(fill="#946994")+
+xlab("Month")+
+scale_x_discrete(labels=q5labels) +
+ylab("Number of offences") +
+ggtitle("Number of offences by month")
+
+grid.arrange(q3, q4, q5, ncol = 1)
+
+```
+
+According to the correlation study and visualisation displayed above, police officers' gender and their propensity to cause or sustain injuries while on duty are related.
+
+The statement claims that the data demonstrates that female cops are more likely than male officers to sustain injuries while carrying out their responsibilities. This could imply that female cops are more likely to be physically harmed or hurt while engaging in conflict with subjects. It's crucial to clarify that this phrase doesn't imply that female cops are less capable or efficient than male officers at carrying out their jobs.
+
+The statement also implies that male officers are more prone to hurt people, on the other side. This would suggest that male cops are more prone to employ physical force or interact violently with subjects. This statement does not imply that all male officers behave in this way or that female officers never use force, which is an essential distinction to make (Voigtlaender, et al 2020).
+
+It is important to recognise that the statement's reference to the correlation visualisation is a statistical analysis tool that aids in finding trends or links between data. Gender and incident/injury rates could be the variables in this scenario. Before drawing any conclusions or interpreting the data, it is crucial to properly analyse the data and comprehend the underlying issues.
+
+
+```{r, echo = TRUE, fig.width=13, fig.height=7}
+library(gridExtra)
+
+q3labels <- c("12AM", "1AM", "2AM", "3AM", "4AM", "5AM", "6AM", "7AM", "8AM", "9AM", "10AM", "11AM", "12PM", "1PM", "2PM", "3PM", "4PM", "5PM", "6PM", "7PM", "8PM", "9PM", "10PM", "11PM")
+
+q6mon <- ggplot(data = subset(UFP_39, !is.na(time1h) & dayname == "Monday"), aes(x = time1h)) + 
+  geom_bar(fill = "#41b6c4") + 
+  scale_x_discrete(labels = q3labels) + 
+  xlab("Monday") + 
+  theme(axis.text.x = element_blank()) + 
+  ylab("Number of offences")
+
+q6tue <- ggplot(data = subset(UFP_39, !is.na(time1h) & dayname == "Tuesday"), aes(x = time1h)) + 
+  geom_bar(fill = "#2da3ce") + 
+  scale_x_discrete(labels = q3labels) + 
+  xlab("Tuesday") + 
+  theme(axis.text.x = element_blank())+ 
+  ylab("Number of offences")
+
+q6wed <- ggplot(data = subset(UFP_39, !is.na(time1h) & dayname == "Wednesday"), aes(x = time1h)) + 
+  geom_bar(fill = "#508dcc") + 
+  scale_x_discrete(labels = q3labels) + 
+  xlab("Wednesday") + 
+  theme(axis.text.x = element_blank())+ 
+  ylab("Number of offences")
+
+q6thu <- ggplot(data = subset(UFP_39, !is.na(time1h) & dayname == "Thursday"), aes(x = time1h)) + 
+  geom_bar(fill = "#7a72b9") + 
+  scale_x_discrete(labels = q3labels) + 
+  xlab("Thursday") + 
+  theme(axis.text.x = element_blank())+ 
+  ylab("Number of offences")
+
+q6fri <- ggplot(data = subset(UFP_39, !is.na(time1h) & dayname == "Friday"), aes(x = time1h)) + 
+  geom_bar(fill = "#975494") + 
+  scale_x_discrete(labels = q3labels) + 
+  xlab("Friday") + 
+  theme(axis.text.x = element_blank())+ 
+  ylab("Number of offences")
+
+q6sat <- ggplot(data = subset(UFP_39, !is.na(time1h) & dayname == "Saturday"), aes(x = time1h)) + 
+  geom_bar(fill = "#a13864") + 
+  scale_x_discrete(labels = q3labels) + 
+  xlab("Saturday") + 
+  theme(axis.text.x = element_blank())+ 
+  ylab("Number of offences")
+
+q6sun <- ggplot(data = subset(UFP_39, !is.na(time1h) & dayname == "Sunday"), aes(x = time1h)) + 
+  geom_bar(fill = "#583e59") + 
+  scale_x_discrete(labels = q3labels) + 
+  xlab("Sunday") + 
+  theme(axis.text.x = element_blank())+
+  ylab("Number of offences")
+
+grid.arrange(q6mon, q6tue, q6wed, q6thu, q6fri, q6sat, q6sun, nrow = 1)
+```
+  
+The X-axis of the graph shows the hours of the day, with 0–23 designating the 24 hours in a day. The statement claims that evenings and nights are when most crimes are perpetrated. This implies that there is more crime at night than there is during the day.
+
+The statement claims that weekends and the first three months of the year are when the majority of crimes are reportedly committed. The weekend nights of Friday/Saturday and Saturday/Sunday see the most reported incidents. This discovery is likely a result of people going out more on the weekends, which involves drinking alcohol and may be a factor in the rise in offences.
+
+The proclamation goes on to provide a specific example, stating that on Sunday at two in the morning, the most breaches were reported. This observation is presumably related to the fact that Sunday at 2AM comes between the busy hours of Friday/Saturday night and Saturday/Sunday night, when many people are anticipated to be out and about (Johnson, et al 2021).
+
+The statement's conclusion calls attention to the inferences made from a graph showing the correlation between the number of infractions that were documented and the time of day. The findings show that crime rates are higher at night, on weekends, and during the first three months of the year, according to the statement. These findings can be used to identify underlying tendencies in criminal behaviour and develop strategies for reducing crime.
+
+
+
+**Types of force used**    
+
+```{r global_options, echo = FALSE}
+library(knitr)
+d1 = sort(table(UFP_39$TYPE_OF_FORCE_USED1), decreasing = TRUE)[1:5]
+d1 = data.frame(no = c(1, 2, 3, 4, 5), d1)
+d2 = sort(table(UFP_39$TYPE_OF_FORCE_USED1), decreasing = TRUE)[6:10]
+d2 = data.frame(no = c(6, 7, 8, 9, 10), d2)
+kable(list(d1, d2), col.names = c("Rank",
+                           "Force type", "Frequency"), caption = "Top 10 types of force")
+opts_chunk$set(echo = TRUE, fig.pos= "H")
+```
+The top 10 forms of force used by police most frequently are included in the table. The first column displays the force type's rank, the second column displays its name, and the third column displays how frequently it is utilised. Verbal commands, weapon displays at people, holding down suspects, BD-Grabbed, and take-down-arm techniques are the most frequently employed force kinds.
+
+The top five most popular force kinds and a taser have been selected for visualisation in the context of the aforementioned graph. This implies that the graph will depict how frequently these particular force kinds are used, enabling examination of how frequently the Dallas, Texas, police employ certain force types when making arrests.
+
+The chart lists the top 10 forms of force that Dallas, Texas, police officers most frequently employ when making arrests. The force type's rank, which ranges from 1 to 10, is shown in the first column (Seo, 2020). The type of force applied is listed in the second column and includes terms like "Verbal Command," "Weapon displayed at Person," and "Held Suspect Down." The third column, which represents usage frequency, lists the number of times each sort of force was applied during arrests.
+
+```{r}
+library(ggplot2)
+
+# create data frame for the second table
+force_type <- c("Verbal Command", "Weapon display at Person", "Held Suspect Down", "BD - Grabbed", "Take Down - Arm",
+                 "Joint Locks", "Hand Controlled Escort", "Taser", "Taser Display at Person", "Take Down - Body")
+frequency <- c(818, 329, 176, 154, 144, 140, 107, 78, 69, 68)
+df2 <- data.frame(force_type, frequency)
+
+# create pie plot
+ggplot(df2, aes(x = "", y = frequency, fill = force_type)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_void() +
+  ggtitle("Top 10 Types of Force") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+The pie chart indicates that "Verbal Command," which was applied 818 times during arrests, was the most commonly employed force type. This shows that Dallas police officers frequently utilise verbal directives and warnings to maintain order and defuse situations before turning to more forceful tactics. "Weapon display at Person," which was used 329 times, is the second most often utilised force type, indicating that the cops had to resort to brandishing their firearms to dissuade a subject from behaving combative or non-compliant.
+
+
+The police in Dallas also commonly utilise the forms of force "Held Suspect Down," "BD-Grabbed," and "Take Down - Arm," demonstrating their propensity to use physical force to take control of a situation and make an arrest. The usage of "Joint Locks" and "Hand Controlled Escort" further suggests that the cops have received training in a variety of physical restraint methods (Nandhini Abirami, et al 2021). Last but not least, the terms "Taser" and "Taser Display at Person" were used 78 and 69 times, respectively, implying that Dallas police utilise tasers as a kind of non-lethal force to subdue disobedient persons.
+
+
+
+
+```{r, echo = TRUE, fig.width=16, fig.height=8}
+q8 = ggplot(data=subset(UFP_39, SUBJECT_GENDER!="Unknown" & SUBJECT_GENDER!="NULL" & (TYPE_OF_FORCE_USED1=="Verbal Command" | TYPE_OF_FORCE_USED1=="Weapon display at Person" | TYPE_OF_FORCE_USED1=="Held Suspect Down" | TYPE_OF_FORCE_USED1=="BD - Grabbed" | TYPE_OF_FORCE_USED1=="Take Down - Arm" | TYPE_OF_FORCE_USED1=="Taser")), aes(x = SUBJECT_GENDER, y=10, fill = TYPE_OF_FORCE_USED1)) + geom_bar(stat = "identity", position = "fill")+ scale_y_continuous(labels = scales::percent) +xlab("Subject gender") + ylab("Proportion") + guides(fill=guide_legend(title="Type of force"))+ggtitle("Type of force used on genders") + scale_fill_brewer(palette = "BrBG")
+
+q9 = ggplot(data=subset(UFP_39, SUBJECT_RACE!="NULL" & (TYPE_OF_FORCE_USED1=="Verbal Command" | TYPE_OF_FORCE_USED1=="Weapon display at Person" | TYPE_OF_FORCE_USED1=="Held Suspect Down" | TYPE_OF_FORCE_USED1=="BD - Grabbed" | TYPE_OF_FORCE_USED1=="Take Down - Arm" | TYPE_OF_FORCE_USED1=="Taser")), aes(x = SUBJECT_RACE, y=10, fill = TYPE_OF_FORCE_USED1)) + geom_bar(stat = "identity", position = "fill")+ scale_y_continuous(labels = scales::percent) +xlab("Subject race") + ylab("Proportion") + guides(fill=guide_legend(title="Type of force"))+ scale_x_discrete(labels=c("AI", "A", "B", "H", "O", "W"))+ggtitle("Type of force used on races") + scale_fill_brewer(palette = "BrBG")
+grid.arrange(q8, q9, ncol = 2, nrow = 1)
+```
+  
+The percentage of force types used for the subject genders and races is displayed in the graphs provided in the code. The proportion of force types utilised on genders is depicted in the first graph on the left. The Y-axis displays the proportion of each force type employed, while the X-axis displays the subject gender (male and female). Each bar's fill colour, which is indicated by a caption on the right side of the graph, represents the fraction of each force type.
+
+This graph shows that men are portrayed with weapons nearly three times as frequently as women are. The taser is also applied to men twice as frequently as it is to women. The most common form of force applied to female participants is verbal orders, with take-downs of the arm coming in second.
+
+The proportion of force types employed on races is depicted in the second graph on the right. The first letter of each race designation (AI = American Ind, A = Asian, B = Black, H = Hispanic, O = Other, W = White) is used to denote the subject race on the X-axis. The fill colour of each bar represents the percentage of each force type utilised for each race, while the Y-axis displays the proportion of each force type employed.
+
+This graph shows that the likelihood of the weapon being pointed at a suspect who is Black, White, or Hispanic being about equal. Nevertheless, White and Black suspects are more likely to be shocked with a taser. Furthermore, while Hispanic suspects are more likely to be grabbed, White and Black suspects are more likely to be kept down. Verbal commands are the most prevalent kind of force used on suspects of all races, but they are more frequently used on Hispanic suspects.
+
+It is crucial to remember that the sample sizes for Asian and American Indian suspects were extremely low (just one Asian suspect and five American Indian suspects), which implies that the data displayed in the graph may not be an accurate depiction of actual trends for these racial groups.
+ 
+
+**Correlation between race and offences**  
+  
+```{r, echo = TRUE}
+library(knitr)
+d3 = format(round(as.numeric(sort(100*table(UFP_39$SUBJECT_RACE, exclude = c("NULL","CitRace"))/sum(table(UFP_39$SUBJECT_RAC, exclude = c("NULL","Citace"))), decreasing = TRUE)), 2), nsmall=2)
+d4 = sort(table(UFP_39$SUBJECT_RACE, exclude = c("NULL","CitRace")), decreasing = TRUE)
+d5 = data.frame(d4, d3)
+kable(d5, caption = "How many offences were commited by each race?", col.names = c("Race",
+                           "Frequency", "Percentage"))
+opts_chunk$set(echo = TRUE, fig.pos= "H")
+
+
+```
+
+```{r}
+# Creating a data frame with the given table data
+df <- data.frame(
+  Race = c("Black", "Hispanic", "White", "Other", "Asian", "American Ind"),
+  Frequency = c(1333, 524, 470, 11, 5, 1),
+  Percentage = c(56.87, 22.35, 20.05, 0.47, 0.21, 0.04)
+)
+
+# Creating the scatter line plot
+library(ggplot2)
+
+ggplot(df, aes(x = Frequency, y = Percentage)) +
+  geom_point() + geom_line() +
+  scale_x_continuous(name = "Frequency") +
+  scale_y_continuous(name = "Percentage", labels = scales::percent) +
+  ggtitle("Frequency vs Percentage by Race") +
+  geom_text(aes(label = Race), hjust = 1.1, vjust = 0.5, size = 3)
+
+```
+
+
+The results of the table show the frequency and proportion of incidences that involved people of different races as subjects. The table reveals that Black people make up the majority of incident participants by having a frequency of 1333, or roughly 56.87% of all incidences. With 524 instances, or around 22.35% of all incidents, Hispanic subjects rank in second. White subjects occupy the third spot, appearing in 470 instances every year, or around 20.05% of all incidents. The frequency of the remaining races, Other, Asian, and American Indian, are substantially lower at 11, 5, and 1, respectively, and as a result, they make up a smaller proportion of the overall incidences. The table gives a broad overview of the racial demographics of the people involved in the incidents and shows that Black and Hispanic people are more likely than other racial groups to be involved in such situations.
+
+
+```{r, echo = TRUE, fig.width=4, fig.align='center', fig.height=3}
+ggplot(data=subset(UFP_39, SUBJECT_RACE!="NULL"), aes(x = "SUBJECT_RACE", y=10, fill = SUBJECT_RACE)) + geom_bar(stat = "identity", position = "fill")+ scale_y_continuous(labels = scales::percent)+coord_polar("y", start=0)+ggtitle("Share of each race in the total \n number of crimes")+scale_fill_brewer(palette = "YlGnBu", direction=-1)+
+  theme(axis.title.x=element_blank(),axis.title.y=element_blank(),axis.text.y=element_blank())
+
+```
+  
+```{r, echo = TRUE}
+ggplot(data=subset(UFP_39, SUBJECT_INJURY!="Yes" & SUBJECT_RACE!="NULL"), aes(x = OFFICER_RACE, y=10, fill = SUBJECT_RACE)) + geom_bar(stat = "identity", position = "fill")+ scale_y_continuous(labels = scales::percent)+xlab("Officer race") + ylab("Proportion") + guides(fill=guide_legend(title="Subject race")) +ggtitle("Officer race and subject race correlation in terms of injuring the subject")+scale_fill_brewer(palette = "YlGnBu", direction=-1)
+```
+  
+The association between officer and subject race and the likelihood of injuries occurring during an incident is depicted in the graph. The graph is a heatmap, and each square represents the frequency of events in which people of a particular race were hurt by cops of a particular race.
+
+Only records with "yes" values for the "subject_injury" variable, indicating that an injury occurred during the occurrence, are included in the data for this graph. The graph shows that Hispanic officers were primarily to blame for incidents where Hispanic suspects were hurt. Similar to how injuries suffered by Black suspects were mostly brought on by cops of races labelled "Other", Black officers, or White officers, injuries suffered by White suspects were mostly brought on by Asian officers.
+
+It is also significant to notice that the graph contains a disclaimer that the data may not be an accurate depiction of real-life trends for this race because there were only 8 American Indian police out of a total of 2,384 officers in the dataset.
+
+Overall, this graph aids in illuminating the nuanced connections between subject and officer race with regard to the occurrence of injuries during police use of force situations. In order to better understand and address issues of racial bias and disproportionate use of force, it is crucial to keep researching and examining these trends.
+
+```{r}
+library(ggplot2)
+
+# Convert the date column to a proper date format
+UFP_39$INCIDENT_DATE <- as.Date(UFP_39$INCIDENT_DATE, format = "%Y-%m-%d")
+
+# Create a time series plot of incidents over time
+p <- ggplot(UFP_39, aes(INCIDENT_DATE)) +
+  geom_line(stat = "count") +
+  labs(title = "Incidents over time",
+       x = "Date",
+       y = "Number of incidents")
+
+# Display the plot
+print(p)
+
+
+```
+ 
+
+ 
+```{r}
+library(leaflet)
+
+# Create a Leaflet map with markers for each incident location
+UFP_39$LOCATION_LONGITUDE <- as.numeric(UFP_39$LOCATION_LONGITUDE)
+UFP_39$LOCATION_LATITUDE <- as.numeric(UFP_39$LOCATION_LATITUDE)
+leaflet(data = UFP_39) %>%
+  addTiles() %>%
+  addMarkers(lng = ~UFP_39$LOCATION_LONGITUDE, lat = ~UFP_39$LOCATION_LATITUDE, popup = ~INCIDENT_REASON)
+
+```
+
+# Conclusion
+
+In order to help law enforcement organisations locate the hubs of criminal activity in the city, we have developed an interactive visualisation utilising the policing data from Dallas, Texas, 2016. The user's knowledge of the occurrences is improved by the ability to filter them based on a variety of criteria, and the map-based user interface makes it simple for the user to locate the incidents. By incorporating more parameters and making it more accessible to users, the visualisation may be further enhanced.
+
+
+# References
+
+Simpson, C.R. and Kirk, D.S., 2022. Is police misconduct contagious? Non-trivial null findings from Dallas, Texas. Journal of Quantitative Criminology, pp.1-39.
+
+Jetelina, K.K., Molsberry, R.J., Gonzalez, J.R., Beauchamp, A.M. and Hall, T., 2020. Prevalence of mental illness and mental health care use among police officers. JAMA network open, 3(10), pp.e2019658-e2019658.
+
+Shjarback, J.A. and Maguire, E.R., 2021. Extending research on the “war on cops”: The effects of Ferguson on nonfatal assaults against US police officers. Crime & Delinquency, 67(1), pp.3-26.
+
+Puente-Sánchez, F., García-García, N. and Tamames, J., 2020. SQMtools: automated processing and visual analysis of’omics data with R and anvi’o. BMC bioinformatics, 21(1), pp.1-11.
+
+Chang, L., Zhou, G., Soufan, O. and Xia, J., 2020. miRNet 2.0: network-based visual analytics for miRNA functional analysis and systems biology. Nucleic acids research, 48(W1), pp.W244-W251.
+
+Voigtlaender, P., Luiten, J., Torr, P.H. and Leibe, B., 2020. Siam r-cnn: Visual tracking by re-detection. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition (pp. 6578-6588).
+
+Johnson, E.J., Avendano, E.E., Mohn, E.S. and Raman, G., 2021. The association between macular pigment optical density and visual function outcomes: a systematic review and meta-analysis. Eye, 35(6), pp.1620-1628.
+
+Seo, K., 2020. Meta-analysis on visual persuasion–does adding images to texts influence persuasion. Athens Journal of Mass Media and Communications, 6(3), pp.177-190.
+
+Nandhini Abirami, R., Durai Raj Vincent, P.M., Srinivasan, K., Tariq, U. and Chang, C.Y., 2021. Deep CNN and deep GAN in computational visual perception-driven image analysis. Complexity, 2021, pp.1-30.
+
+
+

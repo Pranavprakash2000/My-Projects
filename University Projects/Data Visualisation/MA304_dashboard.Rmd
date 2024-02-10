@@ -1,0 +1,49 @@
+---
+title: "MA304-DATA VISUALIZATION"
+output: flexdashboard::flex_dashboard
+date: "2023-04-26"
+Orientation: "Column"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#Import packages
+library(flexdashboard)
+library(plotly)
+library(base64enc)
+library(readr)
+library(dplyr)
+#Import data
+csv_bi <- readBin("C:/Users/DELL/Downloads/37-00049-UOF-P_2016_prepped.csv", "raw",file.info("C:/Users/DELL/Downloads/37-00049-UOF-P_2016_prepped.csv")$size)
+csv_b64 <- base64enc::base64encode(csv_bi)
+
+csv_b641 <- csv_b64
+csv_bi1 <- base64enc::base64decode(csv_b64)
+
+UFP_39 <- read.csv(text = rawToChar(csv_bi1))
+```
+
+## R Markdown
+
+
+
+```{r}
+
+# Create the plot
+gph <- plot_ly(UFP_39, x = ~OFFICER_YEARS_ON_FORCE, y = ~OFFICER_GENDER, type = "scatter", mode = "markers", color = ~OFFICER_GENDER, colors = c("#1F77B4", "#FF7F0E"))
+
+# Add plot title and axis labels
+gph1 <- gph %>% layout(title = "Officer Years on Force vs. Officer Gender", xaxis = list(title = "Officer Years on Force"), yaxis = list(title = "Officer Gender"))
+
+# Display the plot
+gph1
+
+
+
+```
+
+## Flex dashboard
+# scatter plot
+The code generates a scatter plot with the officer's years of service on the x-axis and gender on the y-axis using the plot_ly function.
+
+

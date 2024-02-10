@@ -1,0 +1,162 @@
+---
+title: "MA331-Report: 2211455"
+subtitle: "TED Talks by Taylor Wilson and Jill Bolte Taylor"
+author: "Pranav Prakash"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, comment = NULL)  
+
+# You can extend this list below to load all the packages required for your analyses:
+#====================================================================================
+library(dsEssex)
+library(tidyverse)
+library(tidytext)
+library(dbplyr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggrepel)
+
+# load the 'ted_talks' data
+#=========================
+data(ted_talks)
+```
+
+## Introduction
+
+The aim of this project is to compare the text analysis of the transcripts given by two Ted speakers. Below are the two TED speakers I was assigned.
+
+ 1. Jill Bolte Taylor
+ 
+In *My stroke of insight*, her 2008 TED talk, she explains the many roles of the left and right hemispheres and how they affect how we perceive the world.
+
+2. Taylor Wilson has 2 talks listed in the dataset: 
+
+    + *My radical plan for small nuclear fission reactors*, 2013 - He has developed a new compact modular reactor that can burn down-blended munitions pits and generate power with astonishing efficiency using molten salt and gas.
+
+    + *Yup, I built a nuclear fusion reactor*, 2012 - He advocates for fusion as our future energy source and believes in the potential of children to create positive change, having since produced various detectors and devices, including one to make medicinal isotopes.
+
+
+
+
+
+## Methods
+The below steps are followed to get the analysis shared in this report
+
+* first step is to take ted_talks dataset from dsEssex package
+* tokenize all ted_talks data
+* removed all the stop words(stop words are the commonly repeated words in common language)
+* filtered the assigned ted speakers
+* generated visualisation for most repeated words by both speakers
+* compared top words using geom_text_repel() 
+* joined the data set for a combained sentimental analysis
+* the result of combained sentimental analysis is illustrated on a graph 
+
+
+
+
+
+
+## Results
+
+
+
+The data set is tokenized to tidy format and stop words are removed. 
+
+```{r}
+# tokenization
+token <- ted_talks %>% 
+  tidytext::unnest_tokens(word, text)
+
+
+# stopwords removal
+stop <- token %>%
+  dplyr::anti_join(get_stopwords())
+
+
+```
+
+The new tidy data is then filtered for the assigned speakers.The below table shows the top words used by Taylor Wilson.
+
+```{r}
+#calling the speakers
+#taylor
+talk1_taylor <- stop %>%
+  dplyr::filter(speaker == "Taylor Wilson") %>% 
+  dplyr::count(speaker, word, sort = TRUE)
+# Displying top 10 outputs in talk1_taylor
+slice(talk1_taylor, 1:10)
+
+
+#jill_bolte
+talk2_jill <- stop %>%
+  dplyr::filter(speaker == "Jill Bolte Taylor") %>% 
+  dplyr::count(speaker, word, sort = TRUE)
+
+
+```
+
+The following graph illustrates top words in the transcipt of the talk by Jill Bolte Taylor.By analysing this graph we can find 5 words have count more than 15 
+
+```{r}
+#visualization of top words
+
+talk2_jill %>%
+  dplyr::slice_max(n, n = 15) %>%
+  dplyr::mutate(word = reorder(word, n)) %>%
+  ggplot2::ggplot(aes(n, word)) + ggplot2::geom_col()
+
+
+```
+
+Both the results are compared to see the similarity in the top words. 
+
+
+```{r}
+#comparing words using visualation
+dplyr::bind_rows(talk1_taylor, talk2_jill) %>%
+  group_by(word) %>%
+  filter(sum(n) > 10) %>%
+  ungroup() %>%
+  pivot_wider(names_from = "speaker", values_from = "n", values_fill = 0) %>%
+  ggplot(aes(`Taylor Wilson`, `Jill Bolte Taylor`)) +
+  geom_abline(color = "black", size = 1.2, alpha = 0.75, lty = 3) +
+  geom_text_repel(aes(label = word), max.overlaps = 15) +
+  coord_fixed()
+
+```
+
+Sentimental analysis is carried out on the text created by the speakers and the output is captured in the below graph.
+
+```{r}
+# combining both datasets
+bnd<-rbind(talk1_taylor,talk2_jill)
+
+# generating the sentiment of each words using nrc lexicon
+nrc <- get_sentiments("nrc")
+senti <- bnd %>%
+  inner_join(nrc, by = "word") %>%
+  group_by(speaker, sentiment) %>%
+  summarise(n = n()) %>%
+  pivot_wider(names_from = "speaker", values_from = "n", values_fill = 0)
+
+bnd%>%
+  inner_join(get_sentiments("nrc"), by = "word") %>%
+  count(speaker, sentiment) %>%
+  pivot_wider(names_from = "speaker", values_from = "n", values_fill = 0) %>%
+  # using compute_OR() to get the odds ratio
+  mutate(OR = dsEssex::compute_OR( `Taylor Wilson`, `Jill Bolte Taylor`,correction = FALSE), log_OR = log(OR), sentiment = reorder(sentiment, log_OR)) %>%
+  # plotting the log(oR) and sentiment
+  ggplot(aes(sentiment, log_OR, fill = log_OR < 0)) +
+  geom_col(show.legend = FALSE) +
+  ylab("Log odds ratio") + ggtitle("Sentimental Analysis") +
+  coord_flip() +
+  scale_fill_manual(name = "", values = c("green", "red"))
+
+
+
+
+
